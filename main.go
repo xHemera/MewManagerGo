@@ -76,7 +76,7 @@ func displayMenu() {
     color.New(color.FgGreen).Println("1.\t  Ajouter une carte")
     color.New(color.FgRed).Println("2.\t  Supprimer une carte")
     color.New(color.FgCyan).Println("3.\t  Afficher la collection")
-    color.New(color.FgMagenta).Println("4.\t  Chercher une carte")
+    color.New(color.FgMagenta).Println("4.\t  Chercher une carte (WIP)")
     color.New(color.FgBlue).Println("5.\t  Sauvegarder")
     color.New(color.FgYellow).Println("6.\t 󱃭 Charger")
     color.New(color.FgWhite).Println("7.\t 󰌑 Quitter")
