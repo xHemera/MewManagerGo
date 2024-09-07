@@ -1,6 +1,9 @@
 # MewManagerGo
 The simplest PokemonTCG collection manager because i'm a simple man
 
+## Prerequisites
+Install (GoLand)[https://go.dev/]
+Install any (NerdFont)[https://www.nerdfonts.com/]
 
 ## Installation
 
