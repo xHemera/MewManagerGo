@@ -4,7 +4,11 @@ The simplest PokemonTCG collection manager because i'm a simple man
 ## Prerequisites
 Install [GoLang](https://go.dev/) and any [NerdFont](https://www.nerdfonts.com/).
 
-## Installation
+## Installation from pre-built binaries
+Create an UTF-8 .env and fill it with "POKEMON_API_KEY=yourapikey".
+Execute the binary.
+
+## Installation from sources (recommended)
 
 ```bash
   git clone git@github.com:xHemera/MewManagerGo.git
