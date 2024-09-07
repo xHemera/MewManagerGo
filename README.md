@@ -10,7 +10,7 @@ The simplest PokemonTCG collection manager because i'm a simple man
   go build -o mew main.go
   echo "POKEMON_API_KEY=yourapikey" >> .env
 ```
-Hint: Grab you api key here : https://pokemontcg.io/. If you don't want to use the Search function, this step is skippable.
+Hint: Grab you api key here : https://pokemontcg.io/. Or use mine by asking gently on discord :3
 
 ## Usage
 
