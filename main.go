@@ -3,8 +3,13 @@ package main
 import (
     "bufio"
     "encoding/csv"
+	"encoding/json"
+	"net/http"
     "fmt"
     "os"
+	"log"
+	"github.com/joho/godotenv"
+	"time"
     "strconv"
     "strings"
 
@@ -55,6 +60,13 @@ func main() {
         default:
             fmt.Println("Option invalide. Essayez encore.")
         }
+    }
+}
+
+func init() {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatalf("Erreur lors du chargement du fichier .env: %v", err)
     }
 }
 
@@ -155,11 +167,11 @@ func displayCollection() {
         }
 
         // Affichage formaté
-        fmt.Printf("┌ %s\t%s %s\n", color.New(color.FgWhite).Sprintf(card.Name), colorFunc("󰓹"), colorFunc(getStateDescription(card.State)))
+		fmt.Printf("┌ %s\t%s %s\n", color.New(color.FgWhite).Sprintf(card.Name), colorFunc("󰓹"), colorFunc(getStateDescription(card.State)))
         fmt.Printf("└ UID: %s\tExtension: %s\tNumero: %s\n\n",
             color.New(color.FgHiBlack).Sprintf("%d", card.UID),
             color.New(color.FgHiBlack).Sprintf(card.Series),
-            numColor(card.Number))
+            numColor(card.Number)) 
     }
     fmt.Println("Appuyez sur une touche pour continuer.")
     var input string
@@ -301,19 +313,120 @@ func loadCollection(scanner *bufio.Scanner) {
     scanner.Scan()
 }
 
-func searchCard(scanner *bufio.Scanner) {
-    fmt.Print("Nom de la carte à chercher: ")
-    scanner.Scan()
-    searchName := scanner.Text()
-
-    fmt.Printf("Résultats pour '%s':\n", searchName)
-    for _, card := range collection {
-        if strings.Contains(strings.ToLower(card.Name), strings.ToLower(searchName)) {
-            fmt.Printf("UID: %d, Nom: %s, Série: %s, Numéro: %s, État: %s\n",
-                card.UID, card.Name, card.Series, card.Number, card.State)
+func loadingAnimation(done chan bool) {
+    spinner := []string{"⣾","⣽","⣻","⢿","⡿","⣟","⣯","⣷"}
+    i := 0
+    for {
+        select {
+        case <-done:
+            return
+        default:
+            fmt.Printf("\r%s Chargement de l'API %s", spinner[i], spinner[i])
+            i = (i + 1) % len(spinner)
+            time.Sleep(100 * time.Millisecond)
         }
     }
+}
+
+func searchCard(scanner *bufio.Scanner) {
+    fmt.Println("Rechercher par:")
+    fmt.Println("1. Nom")
+    fmt.Println("2. Extension")
+    fmt.Println("3. Numéro")
+    fmt.Print("Choisissez une option: ")
+    scanner.Scan()
+    searchOption := scanner.Text()
+
+    var searchQuery string
+    var queryField string
+
+    switch searchOption {
+    case "1":
+        fmt.Print("Nom de la carte: ")
+        scanner.Scan()
+        searchQuery = scanner.Text()
+        queryField = "name"
+    case "2":
+        fmt.Print("Nom de l'extension: ")
+        scanner.Scan()
+        searchQuery = scanner.Text()
+        queryField = "set.name"
+    case "3":
+        fmt.Print("Numéro de la carte: ")
+        scanner.Scan()
+        searchQuery = scanner.Text()
+        queryField = "number"
+    default:
+        fmt.Println("Option invalide. Retour au menu principal.")
+        return
+    }
+
+    // Démarrer l'animation de chargement dans une goroutine
+    done := make(chan bool)
+    go loadingAnimation(done)
+
+    apiKey := os.Getenv("POKEMON_API_KEY")
+	if apiKey == "" {
+		fmt.Println("Erreur: la clé API n'est pas définie dans le .env.")
+		return
+	}
+    url := fmt.Sprintf("https://api.pokemontcg.io/v2/cards?q=%s:%s", queryField, searchQuery)
+
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        fmt.Println("Erreur lors de la création de la requête.")
+        return
+    }
+    req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+
+    // Arrêter l'animation une fois la requête terminée
+    done <- true
+    fmt.Println()
+
+    if err != nil {
+        fmt.Println("Erreur lors de l'envoi de la requête.")
+        return
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        fmt.Printf("Erreur HTTP: %s\n", resp.Status)
+        return
+    }
+
+    var result map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+        fmt.Println("Erreur lors de la décodification de la réponse.")
+        return
+    }
+
+    data, ok := result["data"].([]interface{})
+    if !ok || len(data) == 0 {
+        fmt.Println("Aucune carte trouvée.")
+        return
+    }
+
+    fmt.Println("Collection:")
+    for _, item := range data {
+        card, ok := item.(map[string]interface{})
+        if !ok {
+            continue
+        }
+
+        name := card["name"].(string)
+        series := card["set"].(map[string]interface{})["name"].(string)
+        number := card["number"].(string)
+
+        // Affichage formaté
+		fmt.Printf("┌ %s %s\n", color.New(color.FgCyan).Sprintf("󱘶"), color.New(color.FgWhite).Sprintf(name))
+        fmt.Printf("└ Extension: %s\tNumero: %s\n\n", color.New(color.FgHiBlack).Sprintf(series), color.New(color.FgHiBlack).Sprintf(number))
+    }
+
     fmt.Println("Recherche terminée. Appuyez sur une touche pour continuer.")
     scanner.Scan()
+	clearScreen()
 }
 
