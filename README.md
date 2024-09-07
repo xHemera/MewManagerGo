@@ -11,7 +11,7 @@ Execute the binary.
 ## Installation from sources (recommended)
 
 ```bash
-  git clone git@github.com:xHemera/MewManagerGo.git
+  git clone https://github.com/xHemera/MewManagerGo.git
   cd MewManagerGo
   go build -o mew main.go
   echo "POKEMON_API_KEY=yourapikey" >> .env
